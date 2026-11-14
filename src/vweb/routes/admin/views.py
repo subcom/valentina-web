@@ -99,6 +99,7 @@ def _build_update(form: dict[str, Any]) -> CompanyUpdate:
         "permission_free_trait_changes": _empty_to_none(form.get("permission_free_trait_changes")),
         "permission_recoup_xp": _empty_to_none(form.get("permission_recoup_xp")),
         "specialty_xp_cost_enabled": "specialty_xp_cost_enabled" in form,
+        "specialty_rules": _empty_to_none(form.get("specialty_rules")),
     }
     return CompanyUpdate(
         name=form.get("name", "").strip(),
