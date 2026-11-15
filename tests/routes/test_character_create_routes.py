@@ -101,7 +101,9 @@ class TestAutogenChoiceExplanation:
         html = self._cards_html(client, mocker, num_choices=1)
 
         # Then no choosing or discarding is mentioned
-        assert "<strong>one random character</strong>. Review it, then select it to keep it." in html
+        assert (
+            "<strong>one random character</strong>. Review it, then select it to keep it." in html
+        )
         assert "discarded" not in html
         assert "Each roll costs 10 XP." in html
 
