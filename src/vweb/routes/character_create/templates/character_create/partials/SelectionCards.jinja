@@ -123,7 +123,7 @@
             Each roll creates <strong>{{ num_choices }} random characters</strong> side by side. You pick <strong>one</strong> to keep; the other {{ num_choices - 1 }} are discarded.
           </p>
         {% else %}
-          <p>Each roll creates <strong>one random character</strong>, which becomes yours.</p>
+          <p>Each roll creates <strong>one random character</strong>. Review it, then select it to keep it.</p>
         {% endif %}
         <p>For each character, the following steps are taken:</p>
         <ol>
@@ -220,7 +220,7 @@
         {% if num_choices > 1 %}
           You'll see {{ num_choices }} random characters and keep one of them; the other {{ num_choices - 1 }} are discarded.
         {% else %}
-          You'll get one random character, which becomes yours.
+          You'll get one random character to review and select.
         {% endif %}
       </p>
       <div class="modal-action">
