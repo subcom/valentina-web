@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import date
+
 from flask import Blueprint, Response, abort, g, request, session, url_for
 from flask.views import MethodView
 from vclient import sync_campaigns_service
@@ -25,17 +27,35 @@ _NAME_MAX_LEN = 50
 _DESC_MIN_LEN = 3
 
 
-def _validate_campaign_form(name: str, description: str) -> list[str]:
+def _parse_in_game_date(value: str) -> date | None:
+    """Parse the campaign's in-game date from a date input.
+
+    Args:
+        value: The submitted ``YYYY-MM-DD`` text, or blank.
+
+    Returns:
+        The date, or None when blank or not a valid calendar date.
+    """
+    try:
+        return date.fromisoformat(value) if value else None
+    except ValueError:
+        return None
+
+
+def _validate_campaign_form(name: str, description: str, in_game_date: str = "") -> list[str]:
     """Validate campaign form fields.
 
     Args:
         name: The campaign name from the form.
         description: The campaign description from the form.
+        in_game_date: The in-game date from the form, as ``YYYY-MM-DD`` or blank.
 
     Returns:
         A list of validation error messages (empty if valid).
     """
     errors: list[str] = []
+    if in_game_date and _parse_in_game_date(in_game_date) is None:
+        errors.append("In-game date must be a valid date.")
     if not name or len(name) < _NAME_MIN_LEN:
         errors.append("Name must be at least 3 characters.")
     if len(name) > _NAME_MAX_LEN:
@@ -123,20 +143,31 @@ class CampaignCreateView(MethodView):
 
         name = request.form.get("name", "").strip()
         description = request.form.get("description", "").strip()
+        in_game_date = request.form.get("in_game_date", "").strip()
 
-        errors = _validate_campaign_form(name, description)
+        errors = _validate_campaign_form(name, description, in_game_date)
 
         if errors:
             return catalog.render(
                 "shared.layout.CampaignCreateModalContent",
                 errors=errors,
-                form_data={"name": name, "description": description},
+                form_data={
+                    "name": name,
+                    "description": description,
+                    "in_game_date": in_game_date,
+                },
             )
 
         service = sync_campaigns_service(
             on_behalf_of=g.requesting_user.id, company_id=session["company_id"]
         )
-        new_campaign = service.create(CampaignCreate(name=name, description=description or None))
+        new_campaign = service.create(
+            CampaignCreate(
+                name=name,
+                description=description or None,
+                in_game_date=_parse_in_game_date(in_game_date),
+            )
+        )
         cache.global_context.clear_current()
 
         return hx_redirect(url_for("campaign.campaign", campaign_id=new_campaign.id))
@@ -168,20 +199,32 @@ class CampaignUpdateView(MethodView):
 
         name = request.form.get("name", "").strip()
         description = request.form.get("description", "").strip()
+        in_game_date = request.form.get("in_game_date", "").strip()
 
-        errors = _validate_campaign_form(name, description)
+        errors = _validate_campaign_form(name, description, in_game_date)
         if errors:
             return catalog.render(
                 "shared.layout.CampaignCreateModalContent",
                 errors=errors,
-                form_data={"name": name, "description": description},
+                form_data={
+                    "name": name,
+                    "description": description,
+                    "in_game_date": in_game_date,
+                },
                 campaign=campaign,
             )
 
         service = sync_campaigns_service(
             on_behalf_of=g.requesting_user.id, company_id=session["company_id"]
         )
-        service.update(campaign_id, CampaignUpdate(name=name, description=description or None))
+        service.update(
+            campaign_id,
+            CampaignUpdate(
+                name=name,
+                description=description or None,
+                in_game_date=_parse_in_game_date(in_game_date),
+            ),
+        )
         cache.global_context.clear_current()
 
         return hx_redirect(url_for("campaign.campaign", campaign_id=campaign_id))
